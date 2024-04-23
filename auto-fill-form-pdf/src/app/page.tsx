@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useRef, useState } from "react";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -20,12 +20,33 @@ export default function Home() {
     inputRef.current && inputRef.current.click();
   };
 
-  console.log(file, "==file");
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!file) return;
+    try {
+      const data = new FormData();
+      data.set("file", file);
+      const response = await fetch("/api/readPdf", {
+        method: "POST",
+        body: data,
+      });
+      const res = await response.json();
+      console.log(res, "===res");
+
+      setData({ name: res?.name || "", email: res?.email || "" });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <div className="flex justify-center items-center min-h-[100vh] bg-slate-200">
       <div className="flex flex-col items-center p-10 gap-10 bg-white rounded-lg shadow-md md:w-[50%] sm:w-[75%] w-full">
         {/* form to upload pdf */}
-        <form action="" className="w-full flex flex-col gap-5">
+        <form
+          onSubmit={(e) => handleSubmit(e)}
+          className="w-full flex flex-col gap-5"
+        >
           <div className="rounded flex items-center gap-6 p-3 border w-full">
             <input
               type="file"
@@ -36,7 +57,7 @@ export default function Home() {
               onChange={handleFileChange}
             />
             <button
-              className="btn bg-cyan-600 text-white"
+              className="btn bg-cyan-600 text-white w-[100px]"
               type="button"
               onClick={handleButtonClick}
             >
@@ -47,18 +68,21 @@ export default function Home() {
                 Selected File : {file?.name}
               </p>
             ) : (
-              <p className="para text-red-500">
+              <p className="para text-red-500 flex-1">
                 *Only work with pdf containing name and email in it.
               </p>
             )}
           </div>
-          <button type="submit" className="btn w-full bg-indigo-600 text-white">
+          <button
+            type="submit"
+            className="btn w-full bg-indigo-600 text-white"
+            disabled={!file ? true : false}
+          >
             Submit
           </button>
         </form>
 
         {/* Provided name and email */}
-
         {data?.name && data?.email && (
           <div className="flex flex-col gap-3 items-center">
             <p className="para text-slate-700">Name : {data?.name}</p>
