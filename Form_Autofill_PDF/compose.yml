@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  frontend:
+    # pointing out from where to build our image
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - 3000:3000
+    develop:
+      watch:
+        - path: ./package.json
+          action: rebuild
+        - path: ./next-config.json
+          action: rebuild
+        - path: ./package-lock.json
+          action: rebuild
+        - path: ./
+          action : rebuild
+          #sync everything from host to container
+        - path: ./
+          target: /app
+          action: sync
+
+          #Using mongo db atlas not using the image
+    environment:
+      - DB_URL=mongodb+srv://sujata:rnZzJjIDr3bIDymV@cluster0.hnn88vs.mongodb.net/
+    # This will mount the current directory (.) from your host machine to the /app directory inside the container.
+    volumes:
+      - ./:/app
+
+volumes:
+  tasked:
