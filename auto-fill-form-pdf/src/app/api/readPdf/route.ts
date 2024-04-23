@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-const pdf = require("pdf-parse");
+import  pdf, { Result }  from "pdf-parse";
 
 export const POST = async (request: Request) => {
   try {
     const data = await request.formData();
     const file = data.get("file") as File;
-
     if (!file) {
       return NextResponse.json({ success: false });
     }
@@ -13,29 +12,30 @@ export const POST = async (request: Request) => {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    let dataToSendToFrontend ={name : "", email : ""};
-
-    // Parse the PDF and extract the text
-    pdf(buffer).then(function(text : string) {
-         // Split the text by "Message" to separate "Name" and "Message" fields
-    const textParts = text.split("Email");
-
-    if (textParts.length > 0) {
-      dataToSendToFrontend.name = textParts[0].replace(/Name/g, "").trim();
-      if (textParts.length > 1) {
-        dataToSendToFrontend.email = textParts[1].trim();
-      }
-    }
-    })
-    .catch(function(error : Error){
-        // handle exceptions
-        console.log("Error in pdf parsing", Error)
-    })
+    const dataToSendToFrontend = await new Promise<{ name: string; email: string }>((resolve, reject) => {
+      pdf(buffer)
+        .then((text: Result) => {
+          const textParts = text.toString().split("Email");
+          let name = "";
+          let email = "";
+          if (textParts.length > 0) {
+            name = textParts[0].replace(/Name/g, "").trim();
+            if (textParts.length > 1) {
+              email = textParts[1].trim();
+            }
+          }
+          resolve({ name, email });
+        })
+        .catch((error: Error) => {
+          console.log("Error in pdf parsing", error);
+          reject(error);
+        });
+    });
 
     const response = JSON.stringify(dataToSendToFrontend);
     return new NextResponse(response, { status: 200 });
   } catch (err) {
+    console.error(err);
     return new NextResponse("Error", { status: 500 });
   }
-  // return new NextResponse("hello", {status:200})
 };
